@@ -69,5 +69,5 @@ disab_16_17<-
 j_data <-
   inner_join(disab_16_17, pop_dollar_data, by = "State")
 
-
-write.csv(j_data, 'cleaned_data.csv')
+#removes original data sets from working memory
+remove(dollars_state, pop_state, disab_2017_state, disab_2016_state, disab_16_17, pop_dollar_data)

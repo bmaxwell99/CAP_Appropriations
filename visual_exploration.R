@@ -4,13 +4,16 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 
+
 #sets WD to git repo folder, change to run on different computer
 setwd("C:/Users/dark_/Documents/NDRN/CAP_Appropriations")
 source('Clean_join_data.r')
 
+bucket_size <- 10000
+
 #creates a sequence of the given data, only created for code concision
 sequence <- function(df) {
-  return(seq(min(df$dollar_2018), max(df$dollar_2018), 25000 ))
+  return(seq(min(df$dollar_2018), max(df$dollar_2018), bucket_size ))
 }
 
 
@@ -22,21 +25,24 @@ j_data <-
 
 data_2018<-
   j_data %>% 
-  select(State, dollar_2018, pop_18, dol_per_pop_18,normalized_dol) %>% 
+  select(State, dollar_2018, pop_18, dol_per_pop_18) %>% 
+  #attempt to bucket data
   mutate(funding_cat = cut_interval(dollar_2018, 
-                                      length = 25000,
-                                      labels = sequence(data_2018)))
+                                      length = bucket_size,
+                                      labels = sequence(j_data)))
 
 
 #plots against dollars recieved per population
 ggplot(data = data_2018 ) +
-  aes(x = reorder(State, -dol_per_pop_18)  , y = dol_per_pop_18 ,  fill =  funding_cat, show.legend = TRUE) +
+  aes(x = reorder(State, -dol_per_pop_18)  , 
+      y = dol_per_pop_18 ,  
+      fill =  funding_cat
+      ) +
   geom_col() + 
   coord_flip() + 
-  guides(color = guide_legend("title")) + 
   xlab("States") +
-  ylab("Dollars of Funding Recieved per Population")+
-  labs(color = 'Dollars of Funding') 
+  ylab("Dollars of Funding Recieved per Population") +
+  scale_fill_hue(h = c(0, 270))
   
 
 #plots the dollars recieved by state  
@@ -50,7 +56,8 @@ ggplot(data = data_2018 ) +
   labs(color = 'Dollars of Funding')
 
 #plots the stnd deviations from the mean by dollars recieved by state  
-ggplot(data = data_2018 ) +
+ggplot(data = data_2018 %>% 
+  mutate(stndevs = (abs(dollar_2018 - mean(data_2018$dollar_2018))) / sd(data_2018$dollar_2018)) ) +
   aes(x = reorder(State, -dollar_2018)  , y = stndevs , show.legend = TRUE) +
   geom_point() + 
   coord_flip() +
@@ -70,9 +77,10 @@ ggplot(data = data_2018) +
   theme(axis.text.x = element_text(seq(min(data_2018$dollar_2018), max(data_2018$dollar_2018), 25000 )))
   
 factor(seq(min(data_2018$dollar_2018), max(data_2018$dollar_2018), 25000 ))
+
 ggplot(data = data_2018) +
   aes(x = data_2018$dollar_2018) +
-  stat_function(fun = dnorm, n = n_distinct(data_2018$dollar_2018), args = list(mean = mean(data_2018$dollar_2018), sd = sd(data_2018$dollar_2018)))
+  stat_function(fun = rnorm, n = n_distinct(data_2018$dollar_2018), args = list(mean = mean(data_2018$dollar_2018), sd = sd(data_2018$dollar_2018)))
   
 data_2018 %>% 
   mutate(stndevs = (abs(dollar_2018 - mean(data_2018$dollar_2018))) / sd(data_2018$dollar_2018)) %>% 
