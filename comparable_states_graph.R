@@ -26,7 +26,7 @@ format_money <- function(x){
 j_data <- 
   j_data %>% 
   mutate(dol_per_pop_18 = round(dollar_2018 / pop_18, digits = 5)) %>% 
-  mutate(pop_per_dol_18 = round(pop_18 / dollar_2018, digits = 5)) %>% 
+  mutate(pop_per_dol_18 = round(pop_18 / dollar_2018, digits = 5))
 
 data_2018<-
   j_data %>% 
