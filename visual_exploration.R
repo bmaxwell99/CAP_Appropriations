@@ -13,7 +13,13 @@ bucket_size <- 10000
 
 #creates a sequence of the given data, only created for code concision
 sequence <- function(df) {
-  return(seq(min(df$dollar_2018), max(df$dollar_2018), bucket_size ))
+   r <- seq(min(df$dollar_2018), max(df$dollar_2018), bucket_size )
+  return(r)
+}
+
+format_money <- function(x){
+  r <- paste0("$", formatC(as.numeric(x), format="f", digits=0, big.mark=","))
+  return(r)
 }
 
 
@@ -29,9 +35,13 @@ data_2018<-
   #attempt to bucket data
   mutate(funding_cat = cut_interval(dollar_2018, 
                                       length = bucket_size,
-                                      labels = sequence(j_data)))
+                                      labels = j_data %>% 
+                                                  sequence() %>% 
+                                                  format_money()
+                                      ))
 
-
+ 
+         
 #plots against dollars recieved per population
 ggplot(data = data_2018 ) +
   aes(x = reorder(State, -dol_per_pop_18)  , 
@@ -40,9 +50,12 @@ ggplot(data = data_2018 ) +
       ) +
   geom_col() + 
   coord_flip() + 
-  xlab("States") +
-  ylab("Dollars of Funding Recieved per Population") +
-  scale_fill_hue(h = c(0, 270))
+  labs(x = "States", 
+       y = "Dollars of Funding Received per Population",
+       fill = 'Funding Category'
+  ) +
+  scale_fill_hue(h = c(0, 270)) #+
+  theme(legend.title.element_text('Dollars of Funding'))
   
 
 #plots the dollars recieved by state  
@@ -63,9 +76,11 @@ ggplot(data = data_2018 %>%
   coord_flip() +
   guides(fill=FALSE) + 
   xlab("States") +
-  ylab("Dollars of Funding")+
-  labs(color = 'Dollars of Funding')
-
+  ylab("Dollars of Funding") 
+  
+?guides
+?labs
+?theme
 #plots the dollars recieevd as a histogram
 ggplot(data = data_2018) +
   aes(x = dollar_2018) +
