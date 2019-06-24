@@ -29,8 +29,9 @@ dollars_state <-
 pop_state <-
   read.csv("census_est_pop_2010_2018.csv", stringsAsFactors = FALSE) %>%
   mutate(State = as.character(trimws(GEO.display.label))) %>% 
-  select(State, respop72018, respop72017, respop72016) %>% 
-  rename(pop_18 = respop72018, pop_17 = respop72017, pop_16 = respop72016)
+  select(State, respop72018, respop72017, respop72016, respop72015, respop72014, respop72013, respop72012, respop72011) %>% 
+  rename(pop_18 = respop72018, pop_17 = respop72017, pop_16 = respop72016, pop_15 = respop72015, pop_14 = respop72014, 
+         pop_13 = respop72013, pop_12 = respop72012, pop_11 = respop72011)
 
 pop_dollar_data <-
   inner_join(dollars_state, pop_state, by = 'State')
@@ -69,5 +70,56 @@ disab_16_17<-
 j_data <-
   inner_join(disab_16_17, pop_dollar_data, by = "State")
 
+#adds dollar per pop calculation 
+j_data <- 
+  j_data %>% 
+  mutate(dol_per_pop_18 = round(dollar_2018 / pop_18, digits = 5)) %>% 
+  mutate(dol_per_pop_17 = round(dollar_2017 / pop_17, digits = 5)) %>% 
+  mutate(dol_per_pop_16 = round(dollar_2016 / pop_16, digits = 5))
+
+bucket_size <- 10000
+
+#creates a sequence of the given data, only created for code concision
+sequence <- function(df) {
+  r <- seq(min(df$dollar_2018), max(df$dollar_2018), bucket_size )
+  return(r)
+}
+
+format_money <- function(x){
+  r <- paste0("$", formatC(as.numeric(x), format="f", digits=0, big.mark=","))
+  return(r)
+}
+
+bucketed_data <-
+  j_data %>% 
+  #attempt to bucket funding data
+  mutate(funding_cat_18 = cut_interval(dollar_2018, 
+                                    length = bucket_size,
+                                    labels = j_data %>% 
+                                      sequence() %>% 
+                                      format_money()
+  )) %>% 
+  mutate(funding_cat_17 = cut_interval(dollar_2017, 
+                                       length = bucket_size,
+                                       labels = j_data %>% 
+                                         sequence() %>% 
+                                         format_money()
+  )) %>% 
+  mutate(funding_cat_16 = cut_interval(dollar_2016, 
+                                       length = bucket_size,
+                                       labels = j_data %>% 
+                                         sequence() %>% 
+                                         format_money()
+  )) %>% 
+  #provides a boolean column to determine if the state recieved the min
+  mutate(min_funding_18 = if_else(dollar_2018 <= 141917, T, F)) %>% 
+  #provides a bucket to compare like states with 
+  mutate(compare_cat_18 = cut_interval(dol_per_pop_18, 
+                                    #interval for comparison by half the standard deviation of the data
+                                    length = sd(j_data$dol_per_pop_18) / 2,
+                                    labels = factor(c('<.05', '<.08', '<.10', '<.13', '<.16', '<.19', '<.21', '<.24'))
+  ))
 #removes original data sets from working memory
-remove(dollars_state, pop_state, disab_2017_state, disab_2016_state, disab_16_17, pop_dollar_data)
+remove(j_data, dollars_state, pop_state, disab_2017_state, disab_2016_state, disab_16_17, pop_dollar_data, bucket_size)
+
+
