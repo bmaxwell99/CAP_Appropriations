@@ -10,7 +10,8 @@ setwd("C:/Users/dark_/Documents/NDRN/CAP_Appropriations")
 source('Clean_join_data.r')
 
 #plots against dollars recieved per population
-ggplot(data = bucketed_data ) +
+ggplot(data = bucketed_data #%>% filter(dollar_2018 < 141000) %>% filter(State = )
+       ) +
   aes(x = reorder(State, -dol_per_pop_18)  , 
       y = dol_per_pop_18 ,  
       fill =  funding_cat_18
@@ -30,6 +31,8 @@ ggplot(data = bucketed_data ) +
 
 
 
+
+#Plots showing visualized grouping
 ggplot(data = bucketed_data ) +
   aes(x = reorder(State, -dol_per_pop_18)  , 
       y = dol_per_pop_18 ,  

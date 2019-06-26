@@ -13,6 +13,7 @@ dollars_state <-
   mutate(dollar_2018 = as.numeric(str_remove_all(trimws(Current.Awards.FY.2018), "\\D"))) %>% 
   mutate(dollar_2017 = as.numeric(str_remove_all(trimws(Total.Awarded.FY.2017), "\\D"))) %>% 
   mutate(dollar_2016 = as.numeric(str_remove_all(trimws(Total.Awarded.FY.2016), "\\D"))) %>%
+  filter(Grantee != 'NATIVE AMERICAN P and A PROJECT -- DNA - PEOPLES LEGAL SERVICES') %>% 
   #replaces the 'empty' values with 0
   mutate(dollar_2018 = replace_na(dollar_2018, 0), dollar_2017 = replace_na(dollar_2017, 0), dollar_2016 = replace_na(dollar_2016, 0)) %>% 
   select(State, dollar_2018, dollar_2017, dollar_2016) %>% 
@@ -86,7 +87,7 @@ sequence <- function(df) {
 }
 
 format_money <- function(x){
-  r <- paste0("$", formatC(as.numeric(x), format="f", digits=0, big.mark=","))
+  r <- paste0("~$", formatC(as.numeric(x), format="f", digits=0, big.mark=","))
   return(r)
 }
 
@@ -111,8 +112,6 @@ bucketed_data <-
                                          sequence() %>% 
                                          format_money()
   )) %>% 
-  #provides a boolean column to determine if the state recieved the min
-  mutate(min_funding_18 = if_else(dollar_2018 <= 141917, T, F)) %>% 
   #provides a bucket to compare like states with 
   mutate(compare_cat_18 = cut_interval(dol_per_pop_18, 
                                     #interval for comparison by half the standard deviation of the data
@@ -120,6 +119,6 @@ bucketed_data <-
                                     labels = factor(c('<.05', '<.08', '<.10', '<.13', '<.16', '<.19', '<.21', '<.24'))
   ))
 #removes original data sets from working memory
-remove(j_data, dollars_state, pop_state, disab_2017_state, disab_2016_state, disab_16_17, pop_dollar_data, bucket_size)
+remove(j_data, dollars_state, pop_state, disab_2017_state, disab_2016_state, disab_16_17, pop_dollar_data)
 
 

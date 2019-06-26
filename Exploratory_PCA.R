@@ -3,11 +3,9 @@ setwd("C:/Users/dark_/Documents/NDRN/CAP_Appropriations")
 
 source('Clean_join_data.r')
 source('comparable_states_graph.r')
-row.names(j_data) <- c(unlist(j_data[1])) 
+row.names(bucketed_data) <- c(unlist(bucketed_data[1])) 
 
-oof <- inner_join(j_data, data_2018, by = 'State')
-pca <- prcomp(oof %>% select(-State, -dol_per_pop_16, -dol_per_pop_17, 
-                                -dol_per_pop_18, -disab_16, -disab_17) %>% filter(min_funding == T), scale = TRUE)
+pca <- prcomp(bucketed_data %>% select(pop_18,dollar_2018) %>% filter(dollar_2018 > 140000), scale = TRUE)
 
 plot(pca$x[,1], pca$x[,2])
 
@@ -21,7 +19,6 @@ pca_data <-
             X = pca$x[,1],
             Y = pca$x[,2])
 
-pca_data
 
 ggplot(data=pca_data, aes(x=X, y=Y, label=State)) +
   geom_text() +
