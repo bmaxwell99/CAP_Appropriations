@@ -1,13 +1,24 @@
-library(dplyr)
-library(magrittr)
-library(tidyr)
-library(stringr)
-library(ggplot2)
+
 
 setwd("C:/Users/dark_/Documents/NDRN/CAP_Appropriations")
-
-
 source('workload_calc.R')
+
+df <-
+  workload_w_state %>% 
+  filter(pop_cat == 7)
+
+ggplot(data = df) +
+  aes(x = Year,
+      y = work_per_pop,
+      color = factor(fund_per_pop),
+      label = State
+      )+
+  geom_text() +
+  scale_color_hue(h = c(0,270))
+
+
+#TODO Redo the whole rest of this page
+
 
 #preps the data for graphing  
 workload_w_state_18 <- 
@@ -31,7 +42,7 @@ ggplot(data = workload_w_state_18) +
 #Plots a single category
 work_rel_resource_cat <- function(cat){
   ggplot(data = workload_w_state_18 %>% 
-                    filter(compare_cat_18 == cat)) +
+                    filter(pop_cat == cat)) +
     aes(x = reorder(State, -.r),
         y = work_relative_resources,
         fill = fund_cat) +
@@ -48,7 +59,10 @@ work_rel_resource_cat('<.05')
 
 workload_relative_funding_graph <-function(df){
   ggplot(data= df)+
-    aes(x=Year, y= work_per_dol, label = State, color = fund_per_pop)+
+    aes(x=Year, 
+        y= work_per_dol, 
+        label = State, 
+        color = fund_per_pop)+
     geom_text() +
     labs(x = "Year", 
                   y = "*Workload Relative Resources",
@@ -63,7 +77,7 @@ workload_relative_funding_graph <-function(df){
 
 }
 
-df <- workload_w_state %>% filter(funding < 140000, fund_per_pop > .15)
+df <- workload_w_state %>% filter(pop_cat == 1)
 df <- workload_w_state %>% filter(State == 'Wyoming' | State == 'Vermont')
 
 

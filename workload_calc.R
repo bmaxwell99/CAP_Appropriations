@@ -31,8 +31,9 @@ workload_calc_18 <-
                                  length = bucket_size,
                                  labels = seq(min(funding), max(funding), bucket_size) %>% 
                                    format_money()
-  )
-  )
+                                 )
+  
+         )
 
 workload_calc_17 <-
   workload_w_state %>%
@@ -127,22 +128,69 @@ workload_w_state <-
   rbind(workload_calc_11, workload_calc_12, workload_calc_13, workload_calc_14, 
                        workload_calc_15, workload_calc_16, workload_calc_17, workload_calc_18) %>% 
   #adds formula columns
-  mutate(work_per_pop = round(workload / pop, 8),
-         fund_per_pop = round(funding / pop, 5),
-         work_per_dol = round(workload / funding, 5),
-         dol_per_work = round(funding / workload, 5),
-         work_relative_resources = work_per_pop * fund_per_pop,
+  mutate(work_per_pop = round(workload / pop * 100000, 8), #cases per 100,000 people
+         fund_per_pop = round(funding / pop * 100000, 5), #dollars of funding per 100,000 people
+         work_per_dol = round(workload / funding * 100000, 5), #cases per 100,000 dollars in funding
+         fund_per_work = round(funding / workload, 5), #dollars of funding recieved for each case worked
          #adds boolean to show whether recieved min funding
-         min_funding = if_else(funding <= 141917, T, F)) %>% 
+         #TODO Fully write out the decision to include Orgeon and OKlahoma in the mins, but not Kentucky
+         min_funding = if_else(funding <= 140000, T, F)
+         ) %>% 
+  #buckets the states based off population, as presented in the visual argument section of comparable graphs
+  mutate(pop_cat = if_else(is.element(State, c('South Dakota', 'Delaware', 'Montana', 'Rhode Island')),
+                          -2, 
+                          if_else(is.element(State, c('Maine', 'New Hampshire', 'Hawaii')),
+                                  -3,
+                                  if_else(is.element(State, c('Idaho', 'West Virginia', 'Nebraska', 'New Mexico')),
+                                          -4,
+                                          if_else(is.element(State, c('Nevada', 'Kansas', 'Utah','Arkansas','Mississippi', 'Iowa')),
+                                                  -5,
+                                                  if_else(is.element(State, c('Puerto Rico', 'Connecticut', 'Oklahoma', 'Oregon')),
+                                                          -6,
+                                                          if_else(!min_funding & pop < 5100000, 
+                                                                  1, 
+                                                                  if_else(!min_funding & pop < 6150000, 
+                                                                          2,
+                                                                          if_else(!min_funding & pop<7600000,
+                                                                                  3,
+                                                                                  if_else(!min_funding & pop<9000000,
+                                                                                          4,
+                                                                                          if_else(!min_funding & pop<11100000,
+                                                                                                  5,
+                                                                                                  if_else(!min_funding & pop<13000000,
+                                                                                                          6,
+                                                                                                          if_else(pop>13000000,
+                                                                                                                  7,
+                                                                                                                  -1))))))))))))
+         )%>% 
   #removes extra columns
   select(-pop_18, -pop_17, -pop_16, -pop_15, -pop_14, -pop_13, -pop_12, -pop_11,
          -dollar_2018, -dollar_2017, -dollar_2016, -dol_est_2015, -dol_est_2014, -dol_est_2013, -dol_est_2012,
          -dol_est_2011, -funding_cat_18, -funding_cat_17, -funding_cat_16, -dol_per_pop_18, -dol_per_pop_17, -dol_per_pop_16
   )
 
-#row.names(regress_fund_data) <- c(unlist(regress_fund_data[1])) 
+#adds the area of each state
+state_area <- 
+  as.data.frame(state.x77) %>% 
+  select(Area) %>% 
+  mutate(State = row.names(state.x77)) %>% 
+  rbind(data_frame(Area = c(3515, 68) , State = c('Puerto Rico', 'District of Columbia')))
 
+workload_w_state <-
+  inner_join(workload_w_state, state_area, by = 'State')
 
 
 remove(workload_calc_11, workload_calc_12, workload_calc_13, workload_calc_14, 
-       workload_calc_15, workload_calc_16, workload_calc_17, workload_calc_18)
+       workload_calc_15, workload_calc_16, workload_calc_17, workload_calc_18, state_area)
+
+
+sequence_sd <- function(df, col) {
+  col <- enquo(col)
+  r <- seq(min(unlist(df %>% select(!!col))), max(unlist(df %>% select(!!col))), sd(unlist(df %>% select(!!col)))/2 )
+  return(r)
+}
+
+format_money2 <- function(x){
+  r <- paste0("$", formatC(as.numeric(x), format="f", digits=0, big.mark=","))
+  return(r)
+}

@@ -2,6 +2,7 @@ library(dplyr)
 library(magrittr)
 library(tidyr)
 library(stringr)
+library(ggplot2)
 
 #sets WD to git repo folder, change to run on different computer
 setwd("C:/Users/dark_/Documents/NDRN/CAP_Appropriations")
@@ -81,6 +82,7 @@ j_data <-
 bucket_size <- 10000
 
 #creates a sequence of the given data, only created for code concision
+#TODO adjust this function to be dynamic to column input
 sequence <- function(df) {
   r <- seq(min(df$dollar_2018), max(df$dollar_2018), bucket_size )
   return(r)
@@ -94,6 +96,7 @@ format_money <- function(x){
 bucketed_data <-
   j_data %>% 
   #attempt to bucket funding data
+  #TODO determine if this is still needed?
   mutate(funding_cat_18 = cut_interval(dollar_2018, 
                                     length = bucket_size,
                                     labels = j_data %>% 
@@ -112,7 +115,8 @@ bucketed_data <-
                                          sequence() %>% 
                                          format_money()
   )) %>% 
-  #provides a bucket to compare like states with 
+  #provides a bucket to compare like states with like
+  #TODO determine if this is still needed?
   mutate(compare_cat_18 = cut_interval(dol_per_pop_18, 
                                     #interval for comparison by half the standard deviation of the data
                                     length = sd(j_data$dol_per_pop_18) / 2,
@@ -120,5 +124,4 @@ bucketed_data <-
   ))
 #removes original data sets from working memory
 remove(j_data, dollars_state, pop_state, disab_2017_state, disab_2016_state, disab_16_17, pop_dollar_data)
-
 
