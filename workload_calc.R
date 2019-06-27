@@ -14,14 +14,14 @@ bucketed_data <-
 #combines workload
 workload_w_state <-
   indiv_cases_stdzed %>% 
-  select(Year, State, agency_name, workload, ID)
+  select(Year, State, agency_name, workload, ID )
 
 workload_w_state <- inner_join(bucketed_data, workload_w_state, by='State')
 
 
 
 bucket_size <- 10000
-
+#TODO this shit is ridiculout figure out a different way to do this
 workload_calc_18 <-
   workload_w_state %>%
   filter(Year == 2018) %>% 
@@ -138,15 +138,15 @@ workload_w_state <-
          ) %>% 
   #buckets the states based off population, as presented in the visual argument section of comparable graphs
   mutate(pop_cat = if_else(is.element(State, c('South Dakota', 'Delaware', 'Montana', 'Rhode Island')),
-                          -2, 
+                          -5, 
                           if_else(is.element(State, c('Maine', 'New Hampshire', 'Hawaii')),
-                                  -3,
+                                  -4,
                                   if_else(is.element(State, c('Idaho', 'West Virginia', 'Nebraska', 'New Mexico')),
-                                          -4,
+                                          -3,
                                           if_else(is.element(State, c('Nevada', 'Kansas', 'Utah','Arkansas','Mississippi', 'Iowa')),
-                                                  -5,
+                                                  -2,
                                                   if_else(is.element(State, c('Puerto Rico', 'Connecticut', 'Oklahoma', 'Oregon')),
-                                                          -6,
+                                                          -1,
                                                           if_else(!min_funding & pop < 5100000, 
                                                                   1, 
                                                                   if_else(!min_funding & pop < 6150000, 
@@ -161,7 +161,7 @@ workload_w_state <-
                                                                                                           6,
                                                                                                           if_else(pop>13000000,
                                                                                                                   7,
-                                                                                                                  -1))))))))))))
+                                                                                                                  -6))))))))))))
          )%>% 
   #removes extra columns
   select(-pop_18, -pop_17, -pop_16, -pop_15, -pop_14, -pop_13, -pop_12, -pop_11,
@@ -180,8 +180,21 @@ workload_w_state <-
   inner_join(workload_w_state, state_area, by = 'State')
 
 
+#creates a df where showing the relationship between 
+df_network <-
+  data_frame(State = unlist(workload_w_state %>% distinct(State)), network_status = if_else(is.element(State, c( 'Delaware' ,'Georgia',	'Guam',	'Mississippi' ,	'Pennsylvania',	'Vermont',	'Washington')),
+                                                                                                       'Non-State Agency',
+                                                                                                       if_else(is.element(State, c('Alabama',	'Illinois' ,	'Maine' ,	'Maryland' ,	'Nebraska' ,	'North Carolina')),
+                                                                                                                          'VR Agency',
+                                                                                                                          if_else(is.element(State, c('Iowa' ,	'Kentucky',	'Massachusetts',	'New Hampshire',	'Oklahoma',	'Wisconsin')),
+                                                                                                                                  'Other State Agency',
+                                                                                                                                  'P&A Agency'))))
+                                                                                                                          
+workload_w_state <- right_join(df_network, workload_w_state, by = 'State')
+
 remove(workload_calc_11, workload_calc_12, workload_calc_13, workload_calc_14, 
-       workload_calc_15, workload_calc_16, workload_calc_17, workload_calc_18, state_area)
+       workload_calc_15, workload_calc_16, workload_calc_17, workload_calc_18, 
+       state_area,df_network)
 
 
 sequence_sd <- function(df, col) {

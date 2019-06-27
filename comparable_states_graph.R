@@ -59,12 +59,10 @@ Text.pop.Funding.Grey.dynamic <- function(df){
     aes(x = pop,
         y = funding,
         label = State) +
-    geom_text() +
-    theme_bw() +
+    geom_text(position = 'nudge') +
+    theme_bw() 
     #TODO format these into rounded intervals that are easier to read but scale with the graph
-    scale_x_continuous(breaks = df %>% sequence_sd(pop)) +
-    scale_y_continuous(breaks = df %>% sequence_sd(funding) ,
-                       labels = df %>% sequence_sd(funding) %>% format_money2())
+    
     return(plot)    
   
 }
@@ -77,7 +75,18 @@ non_min_states <-
          !min_funding)
 
 #Graph shows that Cali, Texas, Florida and New York are very different from the remaining States
-Text.pop.Funding.Grey.dynamic(non_min_states)
+Text.pop.Funding.Grey.dynamic(non_min_states) + 
+  scale_x_continuous(breaks = seq(4000000,43000000, by = 3500000), 
+                     labels = seq(4,43, by = 3.5)) +
+  scale_y_continuous(breaks = seq(150000,1500000, by=100000),
+                     labels = seq(.15,1.5, by=.1)) +
+  labs(x = 'Population of the State(in millions)**',
+       y = 'Dollars of funding(in millions)*',
+       title = 'Visual Exploration for Comparable States Receiving Above Minimum Funding in 2018(CAP)',
+       subtitle = 'State names that are spatially near each other(as measured by funding and population) may be comparable.',
+       caption = '*Funding amounts drawn from RSA CAP appropriations
+       **Estimated Population drawn from Census Bureau')
+       
 
 #lets get a look at the spread without those
 non_min_states_small <- 
@@ -85,19 +94,31 @@ non_min_states_small <-
     filter(State != 'Texas' & State != 'Florida' & State != 'California' & State != 'New York')
 
 #graph shows a much less uneven spread in this smaller category
-Text.pop.Funding.Grey.dynamic(non_min_states_small)
+Text.pop.Funding.Grey.dynamic(non_min_states_small) 
 
-add_color_by_cat_pop <- function(plot){
-  plot +
-    aes(color = factor(pop_cat) )+
-    scale_color_brewer(palette = 'Dark2') +
-    #TODO change the legend labelling to be more informative(ex 'Group 1, Group 2' etc)
-    labs(color = 'Group number 
-         by Population')
-}
 
 #shows distribution by color bucketing
-add_color_by_cat_pop( Text.pop.Funding.Grey.dynamic(non_min_states_small))
+Text.pop.Funding.Grey.dynamic(non_min_states_small) +
+  aes(color = factor(-pop_cat) )+
+  scale_color_brewer(palette = 'Dark2', labels = c('Illinois,\nOhio,\nPennsylvania\n',
+                                                   'Georgia,\nMichigan,\nNorth Carolina\n',
+                                                   'New Jersey,\nVirginia\n',
+                                                   'Arizona,\nIndiana,\nMassachusetts,\nTennessee\nWashington\n',
+                                                   'Colorado,\nMaryland,\nMinnesota,\nMissouri,\nWisconsin\n', 
+                                                   'Alabama,\nKentucky,\nLouisiana,\nSouth Carolina')) +
+  scale_x_continuous(breaks = seq(4000000,12000000, by = 1000000), 
+                     labels = seq(4,12, by = 1)) +
+  scale_y_continuous(breaks = seq(150000,450000, by=50000),
+                     labels = round(seq(.15,.45, by=.05),2 )) +
+  labs(x = 'Population of the State(in millions)**',
+       y = 'Dollars of funding(in millions)*',
+       title = 'Visual Argument for Comparable States Receiving Above Minimum Funding in 2018(CAP)',
+       subtitle = 'State names that are spatially near each other(as measured by funding and population) may be comparable.
+       Group and color are determined by the combined methodology of group sizes no less than two and population similarity.',
+       caption = '*Funding amounts drawn from RSA CAP appropriations
+       **Estimated Population drawn from Census Bureau',
+       color = 'Grouping') 
+
 #shows distribution by color bucketing
 add_color_by_cat_pop( Text.pop.Funding.Grey.dynamic(non_min_states))
 
