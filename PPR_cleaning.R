@@ -81,29 +81,15 @@ individual_cases <-
                   d_11_conflict = 0,
                   d_12_other = 0
                   )) %>% 
-  #adds all results achieved to measure the number of cases closed
-  mutate(d_cases_closed = d_1_favorable + d_2_some_favor + d_3_approp + d_4_legal_merit + d_5_alt_rep + d_6_withdrew + d_7_not_favor + 
-         d_8_not_needed + d_9_not_resp + d_10_lack_resources + d_11_conflict + d_12_other)   %>% 
   select(-Status, -Individual.still.being.served.as.of.September.30,
          -Individuals.who.are.still.being.served.as.of.October.1, -Additional.individuals.who.were.served.during.the.year) %>% 
   filter(agency_name != 'Native American Disability Law Center')
-  
-
 
 indiv_cases_stdzed <-
   individual_cases %>% 
   mutate(#workload to be a measure of cases taken on 
-         workload = a_total_indiv + a_multiple_cases,
+         workload = a_total_indiv + a_multiple_cases
          
-         #expresses each reason for closing a case as a ratio fo the number of cases closed
-         d_1_per_closed = round(d_1_favorable / workload,2),
-         d_2_per_closed = round(d_2_some_favor / workload,2),
-         d_3_per_closed = round(d_3_approp / workload,2),
-         d_4_per_closed = round(d_4_legal_merit / workload,2),
-         d_7_per_closed = round(d_7_not_favor / workload,2),
-         #cases closed due to lack of resources may be worth looking at a different way
-         d_10_per_closed = round(d_10_lack_resources / workload,2),
-         d_11_per_closed = round(d_11_conflict / workload,2)
          ) 
 
 remove(individual_cases)

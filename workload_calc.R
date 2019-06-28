@@ -14,7 +14,8 @@ bucketed_data <-
 #combines workload
 workload_w_state <-
   indiv_cases_stdzed %>% 
-  select(Year, State, agency_name, workload, ID )
+  select(Year, State, agency_name, workload, c_5_informal_review, c_6_formal_review, c_7_legal, d_1_favorable,
+         d_2_some_favor, d_7_not_favor,d_10_lack_resources , d_11_conflict, ID )
 
 workload_w_state <- inner_join(bucketed_data, workload_w_state, by='State')
 
@@ -163,6 +164,14 @@ workload_w_state <-
                                                                                                                   7,
                                                                                                                   -6))))))))))))
          )%>% 
+  mutate( c_5_per_work = round(c_5_informal_review / workload, 5), 
+          c_6_per_work = round(c_6_formal_review / workload, 5), 
+          c_7_per_work = round(c_7_legal / workload, 5), 
+          d_1_per_work = round(d_1_favorable / workload, 5),
+          d_2_per_work = round(d_2_some_favor / workload, 5), 
+          d_7_per_work = round(d_7_not_favor / workload, 5),
+          d_10_per_work = round(d_10_lack_resources / workload, 5),
+          d_11_per_work = round(d_11_conflict / workload, 5)) %>% 
   #removes extra columns
   select(-pop_18, -pop_17, -pop_16, -pop_15, -pop_14, -pop_13, -pop_12, -pop_11,
          -dollar_2018, -dollar_2017, -dollar_2016, -dol_est_2015, -dol_est_2014, -dol_est_2013, -dol_est_2012,
