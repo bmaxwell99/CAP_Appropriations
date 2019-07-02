@@ -94,4 +94,106 @@ indiv_cases_stdzed <-
 
 remove(individual_cases)
 
+ethnicity_data <-
+  read.csv('demographic data CAP.csv') %>% 
+  rename(Year = ï..Fiscal.Year) %>% 
+  mutate(State = as.character(trimws(State)),
+         c_hispanic_latinx = clean(Hispanic.or.Latino),
+         c_american_native = clean(American.Indian.or.Alaskan.Native),
+         c_asian = clean(Asian),
+         c_black = clean(Black.or.African.American),
+         c_pacific_islander = clean(Native.Hawaiian.or.Other.Pacific.Islander),
+         c_white = clean(White),
+         c_two_plus = clean(Two.or.more.races),
+         c_unknown = clean(Race.ethnicity.unknown)) %>% 
+  select(Year, State, c_hispanic_latinx, c_american_native, c_asian, c_black, c_pacific_islander, c_white, c_two_plus, c_unknown) %>% 
+  #deselects the Native American P&A
+  mutate(ID = factor(paste(Year, State, c_american_native, sep = ', '))) %>% 
+  filter(ID != '2015, New Mexico, 6') %>% 
+  filter(ID != '2016, New Mexico, 6') %>% 
+  filter(ID != '2017, New Mexico, 4') %>% 
+  filter(ID != '2018, New Mexico, 2') %>% 
+  #joins the two Connecticut options together
+  mutate(ID = factor(paste(Year, State, c_white, sep = ', '))) %>% 
+  mutate(c_white = replace(c_white, 
+                           ID == '2017, Connecticut, 29', 
+                           37)) %>%
+  filter(ID != '2017, Connecticut, 8') %>% 
+  #joins the two DC options together
+  mutate(c_hispanic_latinx = replace(c_hispanic_latinx,
+                                     ID == '2011, District of Columbia, 9',
+                                     4)) %>%
+  mutate(c_black = replace(c_black,
+                           ID == '2011, District of Columbia, 9',
+                           66)) %>% 
+  mutate(c_white = replace(c_white,
+                           ID == '2011, District of Columbia, 9',
+                           24)) %>% 
+  mutate(c_two_plus = replace(c_two_plus,
+                              ID == '2011, District of Columbia, 9',
+                              2)) %>% 
+  mutate(c_unknown = replace(c_unknown,
+                             ID == '2011, District of Columbia, 9',
+                             2)) %>% 
+  filter(ID != '2011, District of Columbia, 15') %>% 
+  #joins the two NEvada options
+  mutate(c_hispanic_latinx = replace(c_hispanic_latinx,
+                                     ID == '2013, Nevada, 7',
+                                     3)) %>%
+  mutate(c_black = replace(c_black,
+                           ID == '2013, Nevada, 7',
+                           9)) %>% 
+  mutate(c_white = replace(c_white,
+                           ID == '2013, Nevada, 7',
+                           27)) %>% 
+  mutate(c_two_plus = replace(c_two_plus,
+                              ID == '2013, Nevada, 7',
+                              1)) %>% 
+  filter(ID != '2013, Nevada, 20') %>% 
+  #joins the two new yourk options
+  mutate(c_hispanic_latinx = replace(c_hispanic_latinx,
+                                     ID == '2013, New York, 76',
+                                     31)) %>%
+  mutate(c_asian = replace(c_asian,
+                           ID == '2013, New York, 76',
+                           14)) %>%
+  mutate(c_black = replace(c_black,
+                           ID == '2013, New York, 76',
+                           86)) %>% 
+  mutate(c_white = replace(c_white,
+                           ID == '2013, New York, 76',
+                           141)) %>% 
+  mutate(c_two_plus = replace(c_two_plus,
+                              ID == '2013, New York, 76',
+                              3)) %>% 
+  mutate(c_unknown = replace(c_unknown,
+                             ID == '2013, New York, 76',
+                             37)) %>% 
+  filter(ID != '2013, New York, 65') %>% 
+  #joins the South Carolina options
+  mutate(c_black = replace(c_black,
+                           ID == '2015, South Carolina, 52',
+                           60)) %>% 
+  mutate(c_pacific_islander = replace(c_pacific_islander,
+                           ID == '2015, South Carolina, 52',
+                           1)) %>% 
+  mutate(c_white = replace(c_white,
+                           ID == '2015, South Carolina, 52',
+                           66)) %>% 
+  mutate(c_two_plus = replace(c_two_plus,
+                              ID == '2015, South Carolina, 52',
+                              3)) %>% 
+  filter(ID != '2015, South Carolina, 14') %>% 
+  #changed ID to allow joining
+  mutate(ID = as.character(paste(State, Year, sep = ', '))) %>% 
+  select(-Year, -State) %>% 
+  rename(n_hispanic_latinx = c_hispanic_latinx,
+         n_american_native = c_american_native,
+         n_asian = c_asian,
+         n_black = c_black,
+         n_pacific_islander = c_pacific_islander,
+         n_white = c_white,
+         n_two_plus = c_two_plus,
+         n_unknown = c_unknown)
+
 
