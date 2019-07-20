@@ -1,3 +1,4 @@
+setwd("C:/Users/dark_/Documents/NDRN/CAP_Appropriations")
 source('PPR_cleaning.R')
 source('Clean_join_data.r')
 
@@ -10,15 +11,13 @@ bucketed_data <-
          dol_est_2012 = dollar_2016,
          dol_est_2011 = dollar_2016)
 
-
 #combines workload
 workload_w_state <-
   indiv_cases_stdzed %>% 
-  select(Year, State, agency_name, workload, a_total_indiv ,c_5_informal_review, c_6_formal_review, c_7_legal, d_1_favorable,
-         d_2_some_favor, d_7_not_favor,d_10_lack_resources , d_11_conflict, ID )
+  select(Year, State, agency_name, workload, a_total_indiv, a_multiple_cases, c_5_informal_review, c_6_formal_review, c_7_legal, d_1_favorable,
+         d_2_some_favor, d_7_not_favor, d_10_lack_resources , d_11_conflict, ID )
 
 workload_w_state <- inner_join(bucketed_data, workload_w_state, by='State')
-
 
 
 bucket_size <- 10000
@@ -164,9 +163,9 @@ workload_w_state <-
                                                                                                                   7,
                                                                                                                   -6))))))))))))
          )%>% 
-  mutate( c_5_per_work = round(c_5_informal_review / workload, 5), 
-          c_6_per_work = round(c_6_formal_review / workload, 5), 
-          c_7_per_work = round(c_7_legal / workload, 5), 
+  mutate( c_5_per_pop = round(c_5_informal_review / pop * 100000, 5), 
+          c_6_per_pop = round(c_6_formal_review / pop * 100000, 5), 
+          c_7_per_pop = round(c_7_legal / pop * 100000, 5), 
           d_1_per_work = round(d_1_favorable / workload, 5),
           d_2_per_work = round(d_2_some_favor / workload, 5), 
           d_7_per_work = round(d_7_not_favor / workload, 5),
@@ -191,19 +190,41 @@ workload_w_state <-
 
 #creates a df where showing the relationship between 
 df_network <-
-  data_frame(State = unlist(workload_w_state %>% distinct(State)), network_status = if_else(is.element(State, c( 'Delaware' ,'Georgia',	'Guam',	'Mississippi' ,	'Pennsylvania',	'Vermont',	'Washington')),
-                                                                                                       'Non-State Agency',
-                                                                                                       if_else(is.element(State, c('Alabama',	'Illinois' ,	'Maine' ,	'Maryland' ,	'Nebraska' ,	'North Carolina')),
-                                                                                                                          'VR Agency',
-                                                                                                                          if_else(is.element(State, c('Iowa' ,	'Kentucky',	'Massachusetts',	'New Hampshire',	'Oklahoma',	'Wisconsin')),
-                                                                                                                                  'Other State Agency',
-                                                                                                                                  'P&A Agency'))))
+  data_frame(State = unlist(workload_w_state %>% distinct(State)), 
+             network_status = if_else(is.element(State, c( 'Delaware' ,'Georgia',	'Guam',	'Mississippi' ,	'Pennsylvania',	'Vermont',	'Washington')),
+                                      'Non-State Agency',
+                                       if_else(is.element(State, c('Alabama',	'Illinois' ,	'Maine' ,	'Maryland' ,	'Nebraska' ,	'North Carolina')),
+                                               'VR Agency',
+                                               if_else(is.element(State, c('Iowa' ,	'Kentucky',	'Massachusetts',	'New Hampshire',	'Oklahoma',	'Wisconsin')),
+                                                       'Other State Agency',
+                                                       'P&A Agency'))))
                                                                                                                           
 workload_w_state <- right_join(df_network, workload_w_state, by = 'State')
+
+workload_w_state <-
+  workload_w_state %>% 
+  mutate(network_status = replace(network_status,
+                                  agency_name == 'State Of Nevada Rehabilitation Division',
+                                  'Other State Agency'),
+         network_status = replace(network_status,
+                                  agency_name == 'NYS CQCAPD',
+                                  'Other State Agency'),
+         network_status = replace(network_status,
+                                  agency_name == 'Sheila Conlon Mentkowski',
+                                  'Other State Agency'),
+         network_status = replace(network_status,
+                                  State == 'Alaska' & is.element(Year, c(2011, 2012)),
+                                  'Other State Agency'),
+         network_status = replace(network_status,
+                                  State == 'South Carolina' & Year != 2018,
+                                  'Other State Agency')
+         ) %>% 
+  mutate(is_PA = network_status == 'P&A Agency')
 
 remove(workload_calc_11, workload_calc_12, workload_calc_13, workload_calc_14, 
        workload_calc_15, workload_calc_16, workload_calc_17, workload_calc_18, 
        state_area,df_network)
+
 
 combined_data <- 
   workload_w_state %>% 
@@ -211,15 +232,25 @@ combined_data <-
   filter(ID != '2017, Connecticut, Disability Rights Connecticut') %>% 
   mutate(workload = replace(workload, 
                             State == 'Connecticut'& Year == 2017, 
-                            53)) %>% 
+                            53),
+         a_total_indiv = replace(a_total_indiv,
+                                 State == 'Connecticut'& Year == 2017,
+                                 53)) %>% 
   mutate(d_1_favorable = replace(d_1_favorable, 
                                  State == 'Connecticut'& Year == 2017, 
                                  25)) %>% 
   #combines the two DC line items in 2011 into just one
   filter(workload != 65 | ID != '2011, District of Columbia, University Legal Services, Inc.') %>% 
   mutate(workload = replace(workload, 
-                            State == 'District of Columbia'& Year == 2011, 
-                            102)) %>% 
+                            ID == '2011, District of Columbia, University Legal Services, Inc.', 
+                            102),
+         a_total_indiv = replace(a_total_indiv,
+                                 ID == '2011, District of Columbia, University Legal Services, Inc.',
+                                 98),
+         a_multiple_cases = replace(a_multiple_cases,
+                                    ID == '2011, District of Columbia, University Legal Services, Inc.',
+                                    4)
+         ) %>% 
   mutate(c_6_formal_review = replace(c_6_formal_review, 
                                      State == 'District of Columbia'& Year == 2011, 
                                      15)) %>%
@@ -239,7 +270,10 @@ combined_data <-
   filter(ID != '2013, Nevada, State Of Nevada Rehabilitation Division') %>% 
   mutate(workload = replace(workload, 
                             State == 'Nevada'& Year == 2013, 
-                            40)) %>% 
+                            40),
+         a_total_indiv = replace(a_total_indiv,
+                                 State == 'Nevada'& Year == 2013,
+                                 40)) %>% 
   mutate(c_5_informal_review = replace(c_5_informal_review, 
                                        State == 'Nevada'& Year == 2013, 
                                        5)) %>% 
@@ -262,7 +296,13 @@ combined_data <-
   filter(ID != '2013, New York, Disability Advocates, Inc. dba DRNY') %>% 
   mutate(workload = replace(workload, 
                             State == 'New York'& Year == 2013, 
-                            826)) %>% 
+                            826),
+         a_total_indiv = replace(a_total_indiv,
+                                 State == 'New York'& Year == 2013, 
+                                 823),
+         a_multiple_cases = replace(a_multiple_cases,
+                                    State == 'New York'& Year == 2013, 
+                                    3)) %>% 
   mutate(c_5_informal_review = replace(c_5_informal_review, 
                                        State == 'New York'& Year == 2013, 
                                        13)) %>%
@@ -276,7 +316,13 @@ combined_data <-
   filter(ID != '2015, South Carolina, Department of Admin. Client Assistance Program') %>% 
   mutate(workload = replace(workload, 
                             State == 'South Carolina'& Year == 2015, 
-                            151)) %>% 
+                            151),
+         a_total_indiv = replace(a_total_indiv,
+                                 State == 'South Carolina'& Year == 2015, 
+                                 134),
+         a_multiple_cases = replace(a_multiple_cases,
+                                    State == 'South Carolina'& Year == 2015, 
+                                    17)) %>% 
   mutate(c_5_informal_review = replace(c_5_informal_review, 
                                        State == 'South Carolina'& Year == 2015, 
                                        39)) %>%
@@ -289,29 +335,45 @@ combined_data <-
   mutate(d_7_not_favor = replace(d_7_not_favor, 
                                  State == 'South Carolina'& Year == 2015, 
                                  4)) %>% 
-  #recomputes per ratios to reflect the above changes
-  mutate( work_per_pop = round(workload / pop * 100000, 8), #cases per 100,000 people
+  #recomputes workload and per ratios to reflect the above changes
+  mutate( #workload = a_total_indiv + a_multiple_cases,
+          work_per_pop = round(workload / pop * 100000, 8), #cases per 100,000 people
           work_per_dol = round(workload / funding * 100000, 5), #cases per 100,000 dollars in funding
           c_5_per_work = round(c_5_informal_review / workload, 5), 
           c_6_per_work = round(c_6_formal_review / workload, 5), 
-          c_7_per_work = round(c_7_legal / workload, 5), 
+          c_7_per_work = round(c_7_legal / workload, 5),
+          c_5_per_pop = round(c_5_informal_review / pop * 100000, 5),
+          c_6_per_pop = round(c_6_formal_review / pop* 100000, 5),
+          c_7_per_pop = round(c_7_legal / pop * 100000, 5),
           d_1_per_work = round(d_1_favorable / workload, 5),
           d_2_per_work = round(d_2_some_favor / workload, 5), 
           d_7_per_work = round(d_7_not_favor / workload, 5),
           d_10_per_work = round(d_10_lack_resources / workload, 5),
           d_11_per_work = round(d_11_conflict / workload, 5),
           f_close = d_1_favorable + d_2_some_favor,
-          f_close_per_work = round(f_close / workload, 5)) %>%
+          f_close_per_work = round(f_close / workload, 5),
+          f_close_per_pop = round(f_close / pop * 100000, 5),
+          d_7_per_pop = round(d_7_not_favor / pop * 100000, 5),
+          d_10_per_pop = round(d_10_lack_resources / pop * 100000, 5),
+          d_11_per_pop = round(d_11_conflict / pop * 100000, 5)) %>%
   #allows joining with ethnicity data
   mutate(ID = as.character(paste(State, Year, sep = ', ')))
 
 
-
+ethnicity_data %>% filter(ID == 'District of Columbia, 2011')
 #integrates the ethnicity data from the PPR
 combined_data <-
   inner_join(combined_data, ethnicity_data, by = 'ID')
 
-remove(bucketed_data, ethnicity_data, indiv_cases_stdzed)
+remove(bucketed_data, ethnicity_data)
+
+df_PA <-
+  combined_data %>% 
+  filter(is_PA)
+
+df_not_PA <- 
+  combined_data %>% 
+  filter(!is_PA)
 
 
 sequence_sd <- function(df, col) {
@@ -327,8 +389,46 @@ format_money2 <- function(x){
 
 regression_calc <- function(x, y, value){
   lm_regress <- summary(lm(y ~ x))
-  r <- round(lm_regress[['coefficients']][value], 2)
+  #pasing in 2 will return the slope, passing in 8 will return the p value
+  r <- round(lm_regress[['coefficients']][value], 4)
   return(r)
 }
 
 
+I_R_data <- 
+  read.csv('I&R CAP.csv') %>% 
+  mutate(Year = clean(ï..Fiscal.Year),
+         total_i_r = clean(Total.I.R.services.provided..Lines.A1.through.A6.),
+         indiv_trained = clean(Individuals.attending.trainings.by.CAP.staff)) %>% 
+  mutate(ID = paste(trimws(State), trimws(Year), trimws(Name), sep = ', ')) %>% 
+  select(State, ID, total_i_r, indiv_trained) %>% 
+  replace_na(list(total_i_r = 0,
+                  indiv_trained = 0)) %>% 
+  arrange(State) %>% 
+  #removes the extra DC in 2011
+  slice(-74)
+
+
+
+combined_data <- 
+  combined_data %>% 
+  mutate(ID = paste(trimws(State), trimws(Year), trimws(agency_name), sep = ', '))
+
+combined_data <- 
+  inner_join(combined_data, I_R_data %>% select(-State), by = 'ID') 
+
+combined_data <-
+  combined_data %>% 
+  mutate(indiv_helped = workload + total_i_r + indiv_trained)
+
+Systemic_data <- 
+  read.csv('Systemic Data CAP.csv') %>%
+  rename(Year = ï..Fiscal.Year) %>% 
+  filter(Year >= 2015) 
+
+
+
+#when you see a really high I&R number maybe some of those should have been cases
+#The VR is not communicating rights to people if, 
+
+combined_data %>% filter(State == 'Mississippi') %>% select(Year, f_close_per_work)

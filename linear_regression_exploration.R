@@ -35,7 +35,7 @@ ggplot(data = df_regress)+
   geom_smooth(method = lm)
 
 
-
+workload_regression %>% filter(p_value_work_per_pop < .05 ) %>% View()
 #national trend
 summary(lm(df_regress$work_per_pop ~ df_regress$Year))
 
@@ -50,33 +50,36 @@ ggplot() +
 
 #TODO make an rmarkdown presentation showing states that are low
 
+combined_data %>% filter(State == 'Utah') %>% View()
 
-##SECTION RELATED TO PCA 
-#NON OF THIS WORKS
-pca_prep <- df_regress %>%  select(State, Year,  work_per_pop, c_5_per_work, c_6_per_work, c_7_per_work, d_1_per_work, 
-                       d_2_per_work, d_7_per_work, d_10_per_work, d_11_per_work)
+##SECTION RELATED TO Closes REGRESSION
+#adds regression variables to the data
+close_regression <-
+  combined_data %>% 
+  group_by(State) %>% 
+  summarise(p_value_f_close_per_work = regression_calc(Year, f_close_per_work, 8),
+            lm_f_close_per_work = regression_calc(Year,f_close_per_work,  2),
+            p_value_f_close_per_pop = regression_calc(Year, f_close_per_pop, 8),
+            lm_f_close_per_pop = regression_calc(Year, f_close_per_pop, 2),
+            p_value_d_7_per_pop = regression_calc(Year, d_7_per_pop, 8),
+            lm_d_7_per_pop = regression_calc(Year, d_7_per_pop, 2)
+            ) 
 
-pca <- prcomp(pca_prep %>% select(-Year, -State, -work_per_pop) %>% t(), scale = TRUE)
+regression_stats <- inner_join(close_regression, workload_regression, by = 'State')
 
-plot(pca$x[,1], pca$x[,2])
+regression_stats %>% 
+  filter(p_value_f_close_per_pop <= .05 & p_value_work_per_pop ) %>% 
+  select(-p_value_f_close_per_work, -lm_f_close_per_work) %>% 
+  
+  View()
 
-pca.var <- pca$sdev^2
-pca.var.per <- round(pca.var/sum(pca.var)*100, 1)
+write.csv(regression_stats, 'initial regression analysis.csv')
 
-barplot(pca.var.per, main = 'variation in percent of variation', xlab = 'Principle component', ylab = 'Percent Variation')
+nan_states <-
+  regression_stats %>% 
+  filter(is.nan(p_value_d_7_per_pop) ) %>% 
+  select(State)
 
-pca_data <- 
-  data_frame(State = rownames(pca$x),
-             X = pca$x[,1],
-             Y = pca$x[,2])
-
-
-ggplot(data=pca_data, aes(x=X, y=Y, label=State)) +
-  geom_text() +
-  xlab(paste("PC1 - ", pca.var.per[1], "%", sep="")) +
-  ylab(paste("PC2 - ", pca.var.per[2], "%", sep="")) +
-  theme_bw() +
-  ggtitle("My PCA Graph")
-
-
-
+combined_data %>% 
+  select(State, Year, d_7_not_favor, d_7_per_pop) %>% 
+  filter(is.element(State, c(unlist(nan_states)))) %>% View()

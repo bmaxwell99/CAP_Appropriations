@@ -125,7 +125,7 @@ add_color_by_cat_pop( Text.pop.Funding.Grey.dynamic(non_min_states))
 #TODO make a visual argument for grouping for the minimums
 min_states <-
   workload_w_state %>% 
-  filter(Year == 2018,
+  filter(
          min_funding) 
 
 #TODO add better labeling
@@ -136,7 +136,9 @@ ggplot(data = min_states)+
   geom_point() +
   scale_x_continuous(breaks = min_states %>% sequence_sd(pop)) + 
   aes(color = factor(pop_cat)) +
-  scale_color_brewer(palette = 'Dark2')
+  scale_color_brewer(palette = 'Dark2') +
+  geom_point(data = min_states %>% filter(Year == 2018), aes(color = '2018'))
+  
 
 #graphs name of the state against population and area
 Text.Pop.Area.Grey.Dynamic <- function(df){

@@ -1,4 +1,5 @@
-library(dplyr)
+require(MASS)
+require(dplyr)
 library(magrittr)
 library(tidyr)
 library(stringr)
@@ -12,7 +13,7 @@ clean <- function(vector) {
 individual_cases <- 
   read.csv('Individual Cases CAP.csv', stringsAsFactors = FALSE) %>% 
   rename(Year = ï..Fiscal.Year) %>% 
-  mutate(ID = factor(paste(Year, State, Name, sep = ', '))) %>% 
+  mutate(ID = paste(Year, State, Name, sep = ', ')) %>% 
   mutate(State = as.character(trimws(State)),
          agency_name = Name,
          #renaming/cleaning section A, related to individual counts
@@ -83,16 +84,23 @@ individual_cases <-
                   )) %>% 
   select(-Status, -Individual.still.being.served.as.of.September.30,
          -Individuals.who.are.still.being.served.as.of.October.1, -Additional.individuals.who.were.served.during.the.year) %>% 
-  filter(agency_name != 'Native American Disability Law Center')
+  filter(agency_name != 'Native American Disability Law Center') 
+
+
 
 indiv_cases_stdzed <-
-  individual_cases %>% 
+  individual_cases %>%
+  mutate(a_multiple_cases = replace(a_multiple_cases, 
+                                    State == 'Utah' & Year == 2014, 
+                                    mean(filter(individual_cases, State == 'Utah' & Year != 2014)$a_multiple_cases) %>% 
+                                      round(0)
+                                    )) %>% 
   mutate(#workload to be a measure of cases taken on 
          workload = a_total_indiv + a_multiple_cases
          
          ) 
 
-remove(individual_cases)
+
 
 ethnicity_data <-
   read.csv('demographic data CAP.csv') %>% 
